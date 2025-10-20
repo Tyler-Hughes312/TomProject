@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Lead Generator Database Management Script
+# Based on LegislationForDumbies pattern
+
+set -Eeuo pipefail
+
+# Activate virtual environment
+source env/bin/activate
+
+case "${1:-}" in
+  create)
+    echo "🗄️ Creating database..."
+    python -c "
+from leadgen import app, db
+with app.app_context():
+    db.create_all()
+    print('Database created successfully!')
+"
+    ;;
+  destroy)
+    echo "🗑️ Destroying database..."
+    rm -f var/leadgen.sqlite3
+    echo "Database destroyed!"
+    ;;
+  reset)
+    echo "🔄 Resetting database..."
+    rm -f var/leadgen.sqlite3
+    python -c "
+from leadgen import app, db
+with app.app_context():
+    db.create_all()
+    print('Database reset successfully!')
+"
+    ;;
+  dump)
+    echo "📊 Dumping database..."
+    if [ -f var/leadgen.sqlite3 ]; then
+        sqlite3 var/leadgen.sqlite3 ".dump"
+    else
+        echo "Database not found!"
+        exit 1
+    fi
+    ;;
+  *)
+    echo "Usage: $0 {create|destroy|reset|dump}"
+    echo ""
+    echo "Commands:"
+    echo "  create  - Create the database"
+    echo "  destroy - Destroy the database"
+    echo "  reset   - Reset the database (destroy + create)"
+    echo "  dump    - Dump database contents"
+    exit 1
+    ;;
+esac

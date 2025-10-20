@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Lead Generator Installation Script
+# Based on LegislationForDumbies pattern
+
+set -Eeuo pipefail
+set -x
+
+echo "🚀 Installing Lead Generator..."
+
+# Create Python virtual environment
+echo "📦 Creating Python virtual environment..."
+python3 -m venv env
+
+# Activate Python virtual environment
+echo "🔧 Activating virtual environment..."
+source env/bin/activate
+
+# Install Python dependencies
+echo "📚 Installing Python dependencies..."
+pip install -r requirements.txt
+pip install -e .
+
+# Install Node.js dependencies
+echo "📦 Installing Node.js dependencies..."
+npm install
+
+# Create necessary directories
+echo "📁 Creating directories..."
+mkdir -p var/uploads
+mkdir -p output/exports
+mkdir -p leadgen/static/js
+mkdir -p leadgen/static/css
+mkdir -p leadgen/templates
+
+# Build frontend
+echo "🔨 Building frontend..."
+npx webpack
+
+echo "✅ Lead Generator installation complete!"
+echo ""
+echo "To start the application:"
+echo "  ./bin/leadgenrun"
+echo ""
+echo "To run tests:"
+echo "  ./bin/leadgentest"

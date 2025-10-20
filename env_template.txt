@@ -1,0 +1,26 @@
+# Lead Generator Environment Variables Template
+# Copy this file to .env and fill in your API keys
+
+# Yelp Fusion API Key
+# Get your free API key at: https://www.yelp.com/developers/documentation/v3/authentication
+YELP_API_KEY=your_yelp_api_key_here
+
+# Google Maps API Key
+# Get your API key at: https://developers.google.com/maps/documentation/javascript/get-api-key
+GOOGLE_API_KEY=your_google_api_key_here
+
+# Smarty Streets Address Verification
+# Get your credentials at: https://smartystreets.com/docs/cloud/us-street-api
+SMARTY_STREETS_AUTH_ID=your_smarty_auth_id_here
+SMARTY_STREETS_AUTH_TOKEN=your_smarty_auth_token_here
+
+# Database Configuration
+DATABASE_URL=var/leadgen.sqlite3
+
+# Flask Configuration
+SECRET_KEY=your_secret_key_here
+FLASK_ENV=development
+
+# Optional: Custom settings
+# MAX_RESULTS=1000
+# DEFAULT_RADIUS=25

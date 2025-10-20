@@ -1,0 +1,7 @@
+node_modules/
+env/
+*.pyc
+__pycache__/
+*.egg-info/
+leadgen/static/js/bundle.js
+leadgen/static/js/bundle.js.map

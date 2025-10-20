@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List Generator - Lead Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-brand">📊 Lead Generator</a>
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/list-generator" class="nav-link active">List Generator</a>
+                <a href="/saved-lists" class="nav-link">Saved Lists</a>
+                <a href="/custom-lists" class="nav-link">Custom Lists</a>
+                <a href="/profile" class="nav-link">Profile</a>
+                <a href="/logout" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="main-content">
+        <div class="list-generator-container">
+            <header class="page-header">
+                <h1>🔍 List Generator</h1>
+                <p>Search for businesses and save your results as lists</p>
+            </header>
+            
+            <div class="search-section">
+                <form id="searchForm" class="search-form">
+                    <div class="form-group">
+                        <label for="location">Location *</label>
+                        <input type="text" id="location" name="location" placeholder="Enter city, state, or ZIP code" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="business_type">Business Type</label>
+                            <input type="text" id="business_type" name="business_type" placeholder="e.g., restaurants, coffee shops, gyms, etc.">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="radius">Search Radius (miles)</label>
+                            <input type="number" id="radius" name="radius" value="25" min="1" max="25">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="max_results">Maximum Results</label>
+                        <input type="number" id="max_results" name="max_results" value="50" min="1" max="1000">
+                    </div>
+                    
+                    <button type="submit" class="search-button">🔍 Search Businesses</button>
+                </form>
+            </div>
+            
+            <div class="results-section">
+                <div class="results-header">
+                    <h2>Search Results</h2>
+                    <div class="results-actions">
+                        <button id="saveListBtn" class="save-button" disabled>💾 Save This List</button>
+                    </div>
+                </div>
+                
+                <div id="searchResults" class="business-grid infinite-scroll-container">
+                    <div class="empty-state">
+                        <p>Enter search criteria and click "Search Businesses" to get started</p>
+                    </div>
+                </div>
+                
+                <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Loading more businesses...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Save List Modal -->
+    <div id="saveListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>💾 Save List</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="saveListForm">
+                    <div class="form-group">
+                        <label for="listName">List Name *</label>
+                        <input type="text" id="listName" name="listName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="listDescription">Description</label>
+                        <textarea id="listDescription" name="listDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="saveCount">Number of Businesses to Save</label>
+                        <div class="save-count-container">
+                            <input type="number" id="saveCount" name="saveCount" min="1" max="1000" value="50">
+                            <span class="save-count-info">(Total available: <span id="totalAvailable">0</span>)</span>
+                        </div>
+                        <div class="save-options">
+                            <button type="button" class="save-option-btn" data-count="10">Save 10</button>
+                            <button type="button" class="save-option-btn" data-count="25">Save 25</button>
+                            <button type="button" class="save-option-btn" data-count="50">Save 50</button>
+                            <button type="button" class="save-option-btn" data-count="100">Save 100</button>
+                            <button type="button" class="save-option-btn" data-count="all">Save All</button>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="cancel-button">Cancel</button>
+                        <button type="submit" class="save-button">Save List</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentSearchResults = [];
+        let isLoading = false;
+        let hasMoreResults = false;
+        let currentPage = 1;
+        let currentSearchParams = {};
+        
+        // No need to load categories for text input
+        
+        // Handle search form submission
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const searchParams = Object.fromEntries(formData);
+            
+            // Reset for new search
+            currentSearchResults = [];
+            currentPage = 1;
+            hasMoreResults = true;
+            currentSearchParams = searchParams;
+            
+            await performSearch(searchParams, true);
+        });
+        
+        // Perform search with pagination
+        async function performSearch(searchParams, isNewSearch = false) {
+            if (isLoading) return;
+            
+            isLoading = true;
+            showLoadingIndicator();
+            
+            try {
+                const queryParams = new URLSearchParams({
+                    ...searchParams,
+                    page: currentPage,
+                    size: 20 // Load 20 businesses per page
+                });
+                
+                const response = await fetch(`/api/v1/businesses/search/?${queryParams}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                
+                if (isNewSearch) {
+                    currentSearchResults = data.results;
+                } else {
+                    currentSearchResults = [...currentSearchResults, ...data.results];
+                }
+                
+                displaySearchResults(currentSearchResults);
+                document.getElementById('saveListBtn').disabled = false;
+                
+                // Check if there are more results
+                hasMoreResults = data.results.length >= 20;
+                currentPage++;
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                alert('Search failed');
+            } finally {
+                isLoading = false;
+                hideLoadingIndicator();
+            }
+        }
+        
+        // Display search results
+        function displaySearchResults(businesses) {
+            const container = document.getElementById('searchResults');
+            
+            if (businesses.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>No businesses found</p></div>';
+                return;
+            }
+            
+            container.innerHTML = businesses.map(business => `
+                <div class="business-card">
+                    <div class="business-header">
+                        <h3>${business.name}</h3>
+                        <div class="business-rating">⭐ ${business.rating || 'N/A'}</div>
+                    </div>
+                    <div class="business-info">
+                        <div class="business-address">
+                            📍 ${business.address || 'No address'}
+                            ${business.address_verified ? '<span class="verified-badge">✓ Verified</span>' : ''}
+                        </div>
+                        <div class="business-phone">📞 ${business.phone || 'No phone'}</div>
+                        ${business.website ? `<div class="business-website">🌐 <a href="${business.website}" target="_blank">Visit Website</a></div>` : ''}
+                        ${business.address_verification_status ? `<div class="verification-status">Address Status: ${business.address_verification_status}</div>` : ''}
+                    </div>
+                    <div class="business-actions">
+                        <button class="save-contact-button" data-business-id="${business.id}">
+                            ➕ Save Contact
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Handle save list button
+        document.getElementById('saveListBtn').addEventListener('click', () => {
+            document.getElementById('totalAvailable').textContent = currentSearchResults.length;
+            document.getElementById('saveCount').max = currentSearchResults.length;
+            document.getElementById('saveListModal').style.display = 'block';
+        });
+        
+        // Handle save list form
+        document.getElementById('saveListForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const listData = Object.fromEntries(formData);
+            
+            const saveCount = parseInt(listData.saveCount);
+            const businessesToSave = currentSearchResults.slice(0, saveCount);
+            
+            try {
+                const response = await fetch('/api/v1/saved-lists/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: listData.listName,
+                        description: listData.listDescription,
+                        search_params: JSON.stringify(businessesToSave),
+                        business_count: businessesToSave.length
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`List saved successfully with ${businessesToSave.length} businesses!`);
+                    document.getElementById('saveListModal').style.display = 'none';
+                    document.getElementById('saveListForm').reset();
+                } else {
+                    alert(result.error || 'Failed to save list');
+                }
+                
+            } catch (error) {
+                console.error('Save list error:', error);
+                alert('Failed to save list');
+            }
+        });
+        
+        // Handle save contact buttons
+        document.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('save-contact-button')) {
+                const businessId = e.target.dataset.businessId;
+                // This would open a modal to select which list to save to
+                alert(`Save contact ${businessId} to list functionality coming soon!`);
+            }
+        });
+        
+        // Modal functionality
+        document.querySelector('.close').addEventListener('click', () => {
+            document.getElementById('saveListModal').style.display = 'none';
+        });
+        
+        document.querySelector('.cancel-button').addEventListener('click', () => {
+            document.getElementById('saveListModal').style.display = 'none';
+        });
+        
+        // Infinite scroll functionality
+        function setupInfiniteScroll() {
+            const container = document.getElementById('searchResults');
+            
+            container.addEventListener('scroll', () => {
+                if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+                    if (hasMoreResults && !isLoading) {
+                        performSearch(currentSearchParams, false);
+                    }
+                }
+            });
+        }
+        
+        // Show/hide loading indicator
+        function showLoadingIndicator() {
+            document.getElementById('loadingIndicator').style.display = 'block';
+        }
+        
+        function hideLoadingIndicator() {
+            document.getElementById('loadingIndicator').style.display = 'none';
+        }
+        
+        // Handle save option buttons
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('save-option-btn')) {
+                const count = e.target.dataset.count;
+                const saveCountInput = document.getElementById('saveCount');
+                
+                if (count === 'all') {
+                    saveCountInput.value = currentSearchResults.length;
+                } else {
+                    saveCountInput.value = count;
+                }
+            }
+        });
+        
+        // Page ready
+        setupInfiniteScroll();
+    </script>
+</body>
+</html>

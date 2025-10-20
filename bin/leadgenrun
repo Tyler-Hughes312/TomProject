@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Lead Generator Development Server
+# Based on LegislationForDumbies pattern
+
+set -Eeuo pipefail
+
+echo "🚀 Starting Lead Generator..."
+
+# Activate virtual environment
+source env/bin/activate
+
+# Set up trap to kill background processes on exit
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+
+# Start webpack in watch mode in the background
+echo "🔨 Starting webpack in watch mode..."
+npx webpack --watch &
+
+# Start Flask development server
+echo "🌐 Starting Flask development server..."
+python -m leadgen
+
+echo "✅ Lead Generator is running!"
+echo "🌐 Main App: http://localhost:5000/"
+echo "🔍 API Health: http://localhost:5000/api/v1/"
+echo ""
+echo "Press Ctrl+C to stop the server"

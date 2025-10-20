@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Lead Generator Testing Script
+# Based on LegislationForDumbies pattern
+
+set -Eeuo pipefail
+
+echo "🧪 Running Lead Generator tests..."
+
+# Activate virtual environment
+source env/bin/activate
+
+# Run Python tests
+echo "🐍 Running Python tests..."
+python -m pytest tests/ -v
+
+# Run JavaScript linting
+echo "📝 Running JavaScript linting..."
+npx eslint --ext jsx leadgen/static/js/
+
+# Run JavaScript formatting check
+echo "🎨 Running JavaScript formatting check..."
+npx prettier --check leadgen/static/js/
+
+echo "✅ All tests completed!"

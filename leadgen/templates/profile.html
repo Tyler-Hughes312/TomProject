@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Lead Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-brand">📊 Lead Generator</a>
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/list-generator" class="nav-link">List Generator</a>
+                <a href="/saved-lists" class="nav-link">Saved Lists</a>
+                <a href="/custom-lists" class="nav-link">Custom Lists</a>
+                <a href="/profile" class="nav-link active">Profile</a>
+                <a href="/logout" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="main-content">
+        <div class="profile-container">
+            <header class="page-header">
+                <h1>👤 Profile</h1>
+                <p>Manage your account settings and preferences</p>
+            </header>
+            
+            <div class="profile-content">
+                <div class="profile-section">
+                    <h2>Account Information</h2>
+                    <div class="profile-info">
+                        <div class="info-item">
+                            <label>Username:</label>
+                            <span id="username">Loading...</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Email:</label>
+                            <span id="email">Loading...</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Member Since:</label>
+                            <span id="createdAt">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="profile-section">
+                    <h2>Statistics</h2>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number" id="savedListsCount">0</div>
+                            <div class="stat-label">Saved Lists</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="customListsCount">0</div>
+                            <div class="stat-label">Custom Lists</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="totalContactsCount">0</div>
+                            <div class="stat-label">Total Contacts</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="totalBusinessesCount">0</div>
+                            <div class="stat-label">Businesses Found</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="profile-section">
+                    <h2>Recent Activity</h2>
+                    <div id="recentActivity" class="activity-list">
+                        <p>Loading recent activity...</p>
+                    </div>
+                </div>
+                
+                <div class="profile-section">
+                    <h2>Account Actions</h2>
+                    <div class="profile-actions">
+                        <button id="changePasswordBtn" class="action-button secondary">🔒 Change Password</button>
+                        <button id="exportDataBtn" class="action-button secondary">📊 Export Data</button>
+                        <button id="deleteAccountBtn" class="action-button danger">🗑️ Delete Account</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔒 Change Password</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password *</label>
+                        <input type="password" id="currentPassword" name="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password *</label>
+                        <input type="password" id="newPassword" name="newPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm New Password *</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="cancel-button">Cancel</button>
+                        <button type="submit" class="save-button">Change Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Load profile data
+        async function loadProfileData() {
+            try {
+                // Load user info
+                const authResponse = await fetch('/api/auth/status');
+                const authData = await authResponse.json();
+                
+                if (authData.authenticated) {
+                    document.getElementById('username').textContent = authData.user.username;
+                    document.getElementById('email').textContent = authData.user.email;
+                    document.getElementById('createdAt').textContent = new Date(authData.user.created_at).toLocaleDateString();
+                }
+                
+                // Load statistics
+                const savedListsResponse = await fetch('/api/v1/saved-lists/');
+                const savedListsData = await savedListsResponse.json();
+                document.getElementById('savedListsCount').textContent = savedListsData.total || 0;
+                
+                const customListsResponse = await fetch('/api/v1/custom-lists/');
+                const customListsData = await customListsResponse.json();
+                document.getElementById('customListsCount').textContent = customListsData.total || 0;
+                
+                // Load total contacts (this would need a new API endpoint)
+                document.getElementById('totalContactsCount').textContent = '0';
+                
+                // Load total businesses (this would need a new API endpoint)
+                document.getElementById('totalBusinessesCount').textContent = '0';
+                
+                // Load recent activity (this would need a new API endpoint)
+                document.getElementById('recentActivity').innerHTML = '<p>No recent activity</p>';
+                
+            } catch (error) {
+                console.error('Error loading profile data:', error);
+            }
+        }
+        
+        // Handle change password button
+        document.getElementById('changePasswordBtn').addEventListener('click', () => {
+            document.getElementById('changePasswordModal').style.display = 'block';
+        });
+        
+        // Handle change password form
+        document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            if (data.newPassword !== data.confirmPassword) {
+                alert('New passwords do not match');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/v1/profile/change-password/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        current_password: data.currentPassword,
+                        new_password: data.newPassword
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Password changed successfully!');
+                    document.getElementById('changePasswordModal').style.display = 'none';
+                    document.getElementById('changePasswordForm').reset();
+                } else {
+                    alert(result.error || 'Failed to change password');
+                }
+                
+            } catch (error) {
+                console.error('Change password error:', error);
+                alert('Failed to change password');
+            }
+        });
+        
+        // Handle export data button
+        document.getElementById('exportDataBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/v1/profile/export-data/', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `lead_generator_data_${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    alert('Data exported successfully!');
+                } else {
+                    alert('Error exporting data');
+                }
+            } catch (error) {
+                console.error('Export data error:', error);
+                alert('Error exporting data');
+            }
+        });
+        
+        // Handle delete account button
+        document.getElementById('deleteAccountBtn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
+                    deleteAccount();
+                }
+            }
+        });
+        
+        // Delete account function
+        async function deleteAccount() {
+            try {
+                const response = await fetch('/api/v1/profile/delete-account/', {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Account deleted successfully. You will be redirected to the login page.');
+                    window.location.href = '/login';
+                } else {
+                    alert(result.error || 'Failed to delete account');
+                }
+                
+            } catch (error) {
+                console.error('Delete account error:', error);
+                alert('Failed to delete account');
+            }
+        }
+        
+        // Modal functionality
+        document.querySelectorAll('.close').forEach(closeBtn => {
+            closeBtn.addEventListener('click', (e) => {
+                const modal = e.target.closest('.modal');
+                modal.style.display = 'none';
+            });
+        });
+        
+        document.querySelectorAll('.cancel-button').forEach(cancelBtn => {
+            cancelBtn.addEventListener('click', (e) => {
+                const modal = e.target.closest('.modal');
+                modal.style.display = 'none';
+            });
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+            }
+        });
+        
+        // Load profile data when page loads
+        loadProfileData();
+    </script>
+</body>
+</html>

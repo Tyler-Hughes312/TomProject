@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Lead Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-brand">📊 Lead Generator</a>
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link active">Dashboard</a>
+                <a href="/list-generator" class="nav-link">List Generator</a>
+                <a href="/saved-lists" class="nav-link">Saved Lists</a>
+                <a href="/custom-lists" class="nav-link">Custom Lists</a>
+                <a href="/profile" class="nav-link">Profile</a>
+                <a href="/logout" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="main-content">
+        <div class="dashboard-container">
+            <header class="dashboard-header">
+                <h1>📊 Dashboard</h1>
+                <p>Welcome back! Here's your lead generation overview.</p>
+            </header>
+            
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <h3>📋 Saved Lists</h3>
+                    <div class="stat-number" id="savedListsCount">0</div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>📝 Custom Lists</h3>
+                    <div class="stat-number" id="customListsCount">0</div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>🏢 Total Contacts</h3>
+                    <div class="stat-number" id="totalContactsCount">0</div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>🔍 Recent Searches</h3>
+                    <div class="stat-number" id="recentSearchesCount">0</div>
+                </div>
+            </div>
+            
+            <div class="dashboard-actions">
+                <a href="/list-generator" class="action-button primary">
+                    🔍 Start New Search
+                </a>
+                <a href="/saved-lists" class="action-button secondary">
+                    📋 View Saved Lists
+                </a>
+                <a href="/custom-lists" class="action-button secondary">
+                    📝 Manage Custom Lists
+                </a>
+            </div>
+            
+            <div class="recent-activity">
+                <h2>Recent Activity</h2>
+                <div id="recentActivity" class="activity-list">
+                    <p>No recent activity</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                // Load saved lists count
+                const savedListsResponse = await fetch('/api/v1/saved-lists/');
+                const savedListsData = await savedListsResponse.json();
+                document.getElementById('savedListsCount').textContent = savedListsData.total || 0;
+                
+                // Load custom lists count
+                const customListsResponse = await fetch('/api/v1/custom-lists/');
+                const customListsData = await customListsResponse.json();
+                document.getElementById('customListsCount').textContent = customListsData.total || 0;
+                
+                // Load total contacts (this would need a new API endpoint)
+                document.getElementById('totalContactsCount').textContent = '0';
+                
+                // Load recent searches (this would need a new API endpoint)
+                document.getElementById('recentSearchesCount').textContent = '0';
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+        
+        // Load data when page loads
+        loadDashboardData();
+    </script>
+</body>
+</html>
